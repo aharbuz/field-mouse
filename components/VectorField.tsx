@@ -104,7 +104,7 @@ export default function VectorField() {
       const particles = particlesRef.current;
 
       // Spawn new particles
-      spawnParticles(particles, mousePos, particleConfig, deltaTime);
+      spawnParticles(particles, mousePos, particleConfig);
 
       // Update existing particles
       for (const particle of particles) {
@@ -224,6 +224,7 @@ function drawParticles(
     ctx.fill();
 
     // Add subtle glow
+    const hexOpacity = Math.floor(opacity * 255).toString(16).padStart(2, '0');
     const gradient = ctx.createRadialGradient(
       particle.x,
       particle.y,
@@ -232,7 +233,7 @@ function drawParticles(
       particle.y,
       particle.size * 2
     );
-    gradient.addColorStop(0, config.particleColor + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
+    gradient.addColorStop(0, config.particleColor + hexOpacity);
     gradient.addColorStop(1, config.particleColor + '00');
 
     ctx.fillStyle = gradient;

@@ -77,14 +77,13 @@ export function cullParticles(particles: Particle[]): Particle[] {
 export function spawnParticles(
   particles: Particle[],
   mousePos: Point,
-  config: ParticleConfig,
-  deltaTime: number
+  config: ParticleConfig
 ): void {
   // Don't spawn if mouse is off screen
   if (mousePos.x < -500 || mousePos.y < -500) return;
 
-  // Spawn based on rate and delta time
-  const spawnCount = Math.floor(config.spawnRate * deltaTime);
+  // Spawn fixed number per frame
+  const spawnCount = config.spawnRate;
 
   for (let i = 0; i < spawnCount; i++) {
     if (particles.length >= config.maxParticles) break;
