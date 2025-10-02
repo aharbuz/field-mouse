@@ -50,6 +50,15 @@ TypeScript interfaces defining data structures:
 - `Point`: x, y coordinates
 - `Vector`: anchor point, angle, length
 - `VectorFieldConfig`: Configuration parameters
+- `Particle`: particle state (position, velocity, life)
+- `ParticleConfig`: particle system parameters
+
+### `lib/particleSystem.ts` (PR #1)
+Particle physics and lifecycle management:
+- `createParticle()`: Initialize particle at position
+- `updateParticle()`: Apply vector field forces and physics
+- `cullParticles()`: Remove expired particles
+- `spawnParticles()`: Generate new particles at mouse
 
 ### `components/VectorField.tsx`
 Main component containing:
@@ -119,12 +128,44 @@ yarn start        # Start production server
 yarn lint         # Run ESLint
 ```
 
+## Recent Updates
+
+### PR #1: Particle Trail System (feature/particle-trails)
+**Status**: Open, ready for review
+**Branch**: https://github.com/aharbuz/field-mouse/pull/1
+
+**Implementation Details**:
+- Particles spawn at mouse cursor (3 per frame, random 10px offset)
+- Follow nearest vector field direction via physics simulation
+- Force strength: `max(0, 1 - distToMouse/400)`
+- Velocity damping: 0.95 for smooth trails
+- Lifespan: 2000ms with square-root fade curve for smooth exit
+- Visual: Magenta (#ff00ff) with radial gradient glow
+- Performance: 200 particle cap, culled when life reaches 0
+
+**Key Code**:
+```typescript
+// Semi-transparent clearing creates trail effect
+ctx.fillStyle = defaultConfig.backgroundColor + 'dd';
+
+// Particles update each frame with deltaTime
+updateParticle(particle, mousePos, gridPoints, deltaTime, config);
+```
+
+**Design Decisions**:
+- Magenta chosen for strong contrast with cyan vectors
+- Trail effect from canvas alpha instead of storing particle history (more performant)
+- Nearest grid point determines particle direction (simpler than interpolation)
+- Square root fade (`Math.pow(lifeRatio, 0.5)`) looks more natural than linear
+
 ## Future Enhancement Ideas
 - Add touch/mobile support
 - Color picker for customization
 - Grid density slider
 - Multiple mouse cursors (multiplayer?)
 - WebGL implementation for 10,000+ vectors
-- Particle trail effects
+- ~~Particle trail effects~~ ✅ Implemented in PR #1
 - Sound reactivity
 - 3D vector field (three.js)
+- Variable particle colors based on field strength
+- Particle collision detection

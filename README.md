@@ -9,10 +9,11 @@ An interactive full-page vector field animation where hundreds of vectors dynami
 - **Real-time Interaction**: Vectors point toward mouse cursor with smooth, organic transitions
 - **Dynamic Scaling**: Smoothstep easing function creates natural-feeling animations
 - **Keep-Out Zone**: 60px radius around cursor where vectors gracefully fade to zero
+- **Particle Trails** ✨: Magenta particles spawn at cursor and flow along vector field lines (PR #1)
 - **High Performance**: 60fps rendering with 600-800+ vectors using HTML5 Canvas
 - **Responsive Design**: Grid automatically regenerates on window resize
 - **High-DPI Support**: Crisp rendering on retina displays
-- **Visual Polish**: Opacity gradient and cyan color scheme on dark background
+- **Visual Polish**: Opacity gradient, cyan vectors, magenta particle trails on dark background
 
 ## Demo
 
@@ -63,7 +64,8 @@ field-mouse/
 │   └── VectorField.tsx   # Canvas animation component
 ├── lib/
 │   ├── types.ts          # TypeScript interfaces
-│   └── vectorMath.ts     # Pure math functions
+│   ├── vectorMath.ts     # Pure math functions
+│   └── particleSystem.ts # Particle physics (PR #1)
 ├── CLAUDE.md             # AI context & architecture decisions
 ├── PROGRESS.md           # Detailed implementation docs
 └── CHANGELOG.md          # Version history
@@ -115,9 +117,10 @@ yarn lint
 - Touch support for mobile devices
 - Configurable color schemes
 - WebGL implementation for 10,000+ vectors
-- Particle trail effects
+- ~~Particle trail effects~~ ✅ PR #1
 - Sound reactivity
 - 3D vector field visualization
+- Interactive particle controls
 
 ## License
 

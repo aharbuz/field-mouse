@@ -18,3 +18,23 @@ export interface VectorFieldConfig {
   vectorOpacity: number;
   backgroundColor: string;
 }
+
+export interface Particle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  size: number;
+}
+
+export interface ParticleConfig {
+  spawnRate: number;
+  maxParticles: number;
+  particleLife: number;
+  particleSize: number;
+  particleColor: string;
+  trailLength: number;
+  velocityDamping: number;
+}

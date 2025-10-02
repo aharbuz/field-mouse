@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Particle trail system (PR #1)
+  - Dynamic particle spawning at mouse cursor
+  - Physics-based particle movement following vector field
+  - 2-second particle lifespan with smooth fade-out
+  - Magenta particles (#ff00ff) with glow effects
+  - Motion blur trails via semi-transparent canvas clearing
+  - Max 200 particles for performance
+  - New file: `lib/particleSystem.ts` with particle physics
+  - Updated types: `Particle` and `ParticleConfig` interfaces
+
 ## [0.1.0] - 2025-10-02
 
 ### Added

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Point, VectorFieldConfig } from '@/lib/types';
+import { Point, VectorFieldConfig, Particle, ParticleConfig } from '@/lib/types';
 import { distance, angleTo, calculateVectorLength, generateGrid } from '@/lib/vectorMath';
+import { updateParticle, cullParticles, spawnParticles } from '@/lib/particleSystem';
 
 const defaultConfig: VectorFieldConfig = {
   gridSpacing: 35,
@@ -14,11 +15,23 @@ const defaultConfig: VectorFieldConfig = {
   backgroundColor: '#0a0a0a',
 };
 
+const particleConfig: ParticleConfig = {
+  spawnRate: 3,
+  maxParticles: 200,
+  particleLife: 2000, // milliseconds
+  particleSize: 3,
+  particleColor: '#ff00ff',
+  trailLength: 20,
+  velocityDamping: 0.95,
+};
+
 export default function VectorField() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePos, setMousePos] = useState<Point>({ x: -1000, y: -1000 });
   const [gridPoints, setGridPoints] = useState<Point[]>([]);
   const animationFrameRef = useRef<number>();
+  const particlesRef = useRef<Particle[]>([]);
+  const lastFrameTimeRef = useRef<number>(performance.now());
 
   // Handle mouse movement
   useEffect(() => {
@@ -77,11 +90,32 @@ export default function VectorField() {
     if (!ctx) return;
 
     const render = () => {
+      const now = performance.now();
+      const deltaTime = (now - lastFrameTimeRef.current) / 1000; // Convert to seconds
+      lastFrameTimeRef.current = now;
+
       const rect = canvas.getBoundingClientRect();
 
-      // Clear canvas
-      ctx.fillStyle = defaultConfig.backgroundColor;
+      // Clear canvas with slight trail effect for particles
+      ctx.fillStyle = defaultConfig.backgroundColor + 'dd'; // Slight transparency
       ctx.fillRect(0, 0, rect.width, rect.height);
+
+      // Update particles
+      const particles = particlesRef.current;
+
+      // Spawn new particles
+      spawnParticles(particles, mousePos, particleConfig);
+
+      // Update existing particles
+      for (const particle of particles) {
+        updateParticle(particle, mousePos, gridPoints, deltaTime, particleConfig);
+      }
+
+      // Remove dead particles
+      particlesRef.current = cullParticles(particles);
+
+      // Draw particles first (behind vectors)
+      drawParticles(ctx, particlesRef.current, particleConfig);
 
       // Draw vectors
       ctx.strokeStyle = defaultConfig.vectorColor;
@@ -165,4 +199,49 @@ function drawArrow(
   );
   ctx.closePath();
   ctx.fill();
+}
+
+/**
+ * Draw particles with fade-out based on life
+ */
+function drawParticles(
+  ctx: CanvasRenderingContext2D,
+  particles: Particle[],
+  config: ParticleConfig
+) {
+  ctx.fillStyle = config.particleColor;
+
+  for (const particle of particles) {
+    // Calculate opacity based on remaining life
+    const lifeRatio = particle.life / particle.maxLife;
+    const opacity = Math.pow(lifeRatio, 0.5); // Square root for smoother fade
+
+    ctx.globalAlpha = opacity * 0.9;
+
+    // Draw particle as a small circle with glow
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Add subtle glow
+    const hexOpacity = Math.floor(opacity * 255).toString(16).padStart(2, '0');
+    const gradient = ctx.createRadialGradient(
+      particle.x,
+      particle.y,
+      0,
+      particle.x,
+      particle.y,
+      particle.size * 2
+    );
+    gradient.addColorStop(0, config.particleColor + hexOpacity);
+    gradient.addColorStop(1, config.particleColor + '00');
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Reset fill style for next particle
+    ctx.fillStyle = config.particleColor;
+  }
 }
