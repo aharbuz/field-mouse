@@ -1,0 +1,168 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { Point, VectorFieldConfig } from '@/lib/types';
+import { distance, angleTo, calculateVectorLength, generateGrid } from '@/lib/vectorMath';
+
+const defaultConfig: VectorFieldConfig = {
+  gridSpacing: 35,
+  keepOutRadius: 60,
+  maxVectorLength: 25,
+  influenceRange: 120,
+  vectorColor: '#00ffff',
+  vectorOpacity: 0.8,
+  backgroundColor: '#0a0a0a',
+};
+
+export default function VectorField() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mousePos, setMousePos] = useState<Point>({ x: -1000, y: -1000 });
+  const [gridPoints, setGridPoints] = useState<Point[]>([]);
+  const animationFrameRef = useRef<number>();
+
+  // Handle mouse movement
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseLeave = () => {
+      setMousePos({ x: -1000, y: -1000 });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
+  // Handle canvas resize and grid generation
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+      }
+
+      // Regenerate grid when canvas resizes
+      setGridPoints(generateGrid(rect.width, rect.height, defaultConfig.gridSpacing));
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, []);
+
+  // Animation loop
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const render = () => {
+      const rect = canvas.getBoundingClientRect();
+
+      // Clear canvas
+      ctx.fillStyle = defaultConfig.backgroundColor;
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      // Draw vectors
+      ctx.strokeStyle = defaultConfig.vectorColor;
+      ctx.fillStyle = defaultConfig.vectorColor;
+      ctx.globalAlpha = defaultConfig.vectorOpacity;
+      ctx.lineWidth = 1.5;
+
+      gridPoints.forEach((point) => {
+        const dist = distance(point, mousePos);
+        const angle = angleTo(point, mousePos);
+        const length = calculateVectorLength(
+          dist,
+          defaultConfig.keepOutRadius,
+          defaultConfig.maxVectorLength,
+          defaultConfig.influenceRange
+        );
+
+        if (length > 0) {
+          // Color gradient based on distance (closer = brighter)
+          const normalizedDist = Math.min(1, dist / 300);
+          const opacity = defaultConfig.vectorOpacity * (0.4 + 0.6 * normalizedDist);
+
+          ctx.globalAlpha = opacity;
+          drawArrow(ctx, point.x, point.y, angle, length);
+        }
+      });
+
+      animationFrameRef.current = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gridPoints, mousePos]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full"
+      style={{ cursor: 'none' }}
+    />
+  );
+}
+
+/**
+ * Draw an arrow (line + triangle head) on the canvas
+ */
+function drawArrow(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  length: number
+) {
+  const endX = x + Math.cos(angle) * length;
+  const endY = y + Math.sin(angle) * length;
+
+  // Draw line
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(endX, endY);
+  ctx.stroke();
+
+  // Draw arrowhead
+  const headLength = Math.min(6, length * 0.3);
+  const headAngle = Math.PI / 6; // 30 degrees
+
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(
+    endX - headLength * Math.cos(angle - headAngle),
+    endY - headLength * Math.sin(angle - headAngle)
+  );
+  ctx.lineTo(
+    endX - headLength * Math.cos(angle + headAngle),
+    endY - headLength * Math.sin(angle + headAngle)
+  );
+  ctx.closePath();
+  ctx.fill();
+}
